@@ -205,9 +205,7 @@
     </footer>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import {
-            getAuth,
             onAuthStateChanged,
             signOut,
             signInWithEmailAndPassword,
@@ -219,18 +217,13 @@
             signInWithPopup
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { 
-            getFirestore, 
             doc, 
             getDoc, 
             setDoc,
             serverTimestamp 
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         
-        import { firebaseConfig } from "./firebase-config.js";
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        import { auth, db } from "./firebase-init.js";
 
         // UI References
         const loginContainer = document.getElementById('login-container');

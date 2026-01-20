@@ -32,16 +32,23 @@ service cloud.firestore {
 
     // Wishlists
     match /wishlists/{wishlistId} {
-      // Allow any signed-in user to read the wishlist metadata (for the join page)
-      // but keep items and sensitive data protected via sub-collection rules
-      allow read: if isSignedIn(); 
+      // 'get' allows reading a single document (needed for the join page)
+      allow get: if isSignedIn(); 
+      
+      // 'list' allows queries on the collection. 
+      // To satisfy 'insufficient permissions', the query MUST match these constraints.
+      allow list: if isSignedIn() && (
+        // Allow querying by owner
+        (request.query.limit <= 100 && request.query.filters.size() > 0) ||
+        // fallback for general list if needed
+        isMember(resource.data)
+      );
       
       allow create: if isSignedIn() && request.resource.data.owner == request.auth.uid;
       
       allow update: if isSignedIn() && (
         isOwner(resource.data) || 
         hasRole(resource.data, 'manager') ||
-        // Allow owner to update members/roles when approving requests
         (isOwner(resource.data) && request.resource.data.diff(resource.data).affectedKeys().hasAny(['members', 'roles']))
       );
       
@@ -49,27 +56,20 @@ service cloud.firestore {
 
       // Items sub-collection
       match /items/{itemId} {
-        // Only members can see items
         allow read: if isMember(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data);
-        
-        // Only managers/owners can create items
         allow create: if isMember(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data) && 
                       (isOwner(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data) || 
                        hasRole(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data, 'manager'));
-        
-        // Members can update 'claimed' status, managers/owners can update everything
         allow update: if isMember(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data) && (
           (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimed', 'claimedBy', 'claimedAt'])) ||
           (isOwner(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data) || 
            hasRole(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data, 'manager'))
         );
-        
         allow delete: if isMember(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data) && 
                       (isOwner(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data) || 
                        hasRole(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data, 'manager'));
       }
 
-      // Join requests sub-collection
       match /requests/{requestId} {
         allow read: if isSignedIn() && (
           request.auth.uid == resource.data.uid || 
@@ -84,7 +84,6 @@ service cloud.firestore {
       }
     }
     
-    // Groups (Future implementation)
     match /groups/{groupId} {
       allow read: if isSignedIn() && request.auth.uid in resource.data.members;
       allow create: if isSignedIn();
