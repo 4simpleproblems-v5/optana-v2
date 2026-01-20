@@ -1,0 +1,77 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(wishlistData) {
+      return isSignedIn() && wishlistData.owner == request.auth.uid;
+    }
+    
+    function hasRole(wishlistData, role) {
+      return isSignedIn() && wishlistData.roles[request.auth.uid] == role;
+    }
+    
+    function isMember(wishlistData) {
+      return isSignedIn() && request.auth.uid in wishlistData.members;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Wishlists
+    match /wishlists/{wishlistId} {
+      allow read: if isMember(resource.data);
+      allow create: if isSignedIn();
+      allow update: if isOwner(resource.data) || hasRole(resource.data, 'manager');
+      allow delete: if isOwner(resource.data);
+
+      // Items sub-collection
+      match /items/{itemId} {
+        allow read: if isMember(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data);
+        allow create: if isMember(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data) && 
+                      (hasRole(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data, 'owner') || 
+                       hasRole(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data, 'manager'));
+        
+        // Members can update 'claimed' status, but only managers/owners can update other fields
+        allow update: if isMember(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data) && (
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimed', 'claimedBy', 'claimedAt'])) ||
+          (hasRole(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data, 'owner') || 
+           hasRole(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data, 'manager'))
+        );
+        
+        allow delete: if isMember(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data) && 
+                      (hasRole(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data, 'owner') || 
+                       hasRole(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data, 'manager'));
+      }
+
+      // Join requests sub-collection
+      match /requests/{requestId} {
+        allow read: if isSignedIn() && (
+          request.auth.uid == resource.data.uid || 
+          hasRole(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data, 'owner')
+        );
+        allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+        allow update: if isSignedIn() && hasRole(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data, 'owner');
+        allow delete: if isSignedIn() && (
+          request.auth.uid == resource.data.uid || 
+          hasRole(get(/databases/$(database)/documents/wishlists/$(wishlistId)).data, 'owner')
+        );
+      }
+    }
+    
+    // Groups (Future implementation)
+    match /groups/{groupId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.members;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.owner == request.auth.uid;
+    }
+  }
+}
