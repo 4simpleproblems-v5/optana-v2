@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Wishlist - Optana V2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-darkest-gray': '#040404',
+                        'custom-dark-gray': '#111111',
+                        'custom-medium-gray': '#252525',
+                        'custom-light-gray': '#505050',
+                        'custom-lighter-gray': '#808080',
+                        'custom-white-gray': '#c0c0c0',
+                        'optana-orange': '#FF8C42',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Geist', sans-serif; background-color: #040404; color: #c0c0c0; }
+        .main-content { margin-left: 16rem; min-height: 100vh; }
+        @media (max-width: 768px) { .main-content { margin-left: 0; } }
+        .modal { backdrop-filter: blur(8px); }
+        .item-card.claimed { opacity: 0.6; }
+    </style>
+</head>
+<body class="bg-custom-darkest-gray text-custom-white-gray">
+
+    <main class="main-content p-8">
+        <header class="flex items-start justify-between mb-12">
+            <div>
+                <a href="wishlists.html" class="text-sm text-custom-light-gray hover:text-white transition mb-4 inline-block">&larr; Back to Wishlists</a>
+                <h1 id="wishlist-title" class="text-4xl font-light tracking-tighter mb-2">Loading Wishlist...</h1>
+                <p id="wishlist-desc" class="text-custom-light-gray">...</p>
+            </div>
+            <div class="flex space-x-3" id="action-buttons" style="display: none;">
+                <button id="open-share-modal" class="px-6 py-3 bg-custom-dark-gray border border-custom-medium-gray text-white rounded-2xl hover:bg-custom-medium-gray transition flex items-center space-x-2">
+                    <i class="fas fa-share-alt"></i>
+                    <span>Share</span>
+                </button>
+                <button id="open-add-item-modal" class="px-6 py-3 bg-optana-orange text-white rounded-2xl hover:bg-orange-600 transition flex items-center space-x-2">
+                    <i class="fas fa-plus"></i>
+                    <span>Add Item</span>
+                </button>
+            </div>
+        </header>
+
+        <section id="items-section">
+            <h2 class="text-2xl font-light tracking-tighter mb-6">Wishlist Items</h2>
+            <div id="items-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Items will be loaded here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Add Item Modal -->
+    <div id="add-item-modal" class="modal fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60" id="close-item-modal-bg"></div>
+        <div class="relative w-full max-w-lg bg-custom-dark-gray border border-custom-medium-gray rounded-3xl p-8 shadow-2xl">
+            <h2 class="text-2xl font-light tracking-tighter mb-6 text-white">Add New Item</h2>
+            <form id="add-item-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-custom-light-gray mb-2">Item Title</label>
+                    <input type="text" id="item-title" placeholder="e.g. Wireless Headphones" required class="w-full p-3 bg-custom-darkest-gray border border-custom-medium-gray rounded-xl text-white focus:border-optana-orange outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm text-custom-light-gray mb-2">URL (Optional)</label>
+                    <input type="url" id="item-url" placeholder="https://amazon.com/..." class="w-full p-3 bg-custom-darkest-gray border border-custom-medium-gray rounded-xl text-white focus:border-optana-orange outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm text-custom-light-gray mb-2">Description / Notes (Optional)</label>
+                    <textarea id="item-desc" rows="3" placeholder="Any specific details?" class="w-full p-3 bg-custom-darkest-gray border border-custom-medium-gray rounded-xl text-white focus:border-optana-orange outline-none transition"></textarea>
+                </div>
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" id="close-item-modal" class="flex-1 p-3 bg-custom-medium-gray text-white rounded-xl hover:bg-custom-light-gray transition">Cancel</button>
+                    <button type="submit" class="flex-1 p-3 bg-optana-orange text-white rounded-xl hover:bg-orange-600 transition">Add to List</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="share-modal" class="modal fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60" id="close-share-modal-bg"></div>
+        <div class="relative w-full max-w-lg bg-custom-dark-gray border border-custom-medium-gray rounded-3xl p-8 shadow-2xl">
+            <h2 class="text-2xl font-light tracking-tighter mb-2 text-white">Share Wishlist</h2>
+            <p class="text-sm text-custom-light-gray mb-6">Invite others to view or manage your wishlist.</p>
+            
+            <div class="mb-8">
+                <label class="block text-sm text-custom-light-gray mb-2">Invite Link</label>
+                <div class="flex space-x-2">
+                    <input type="text" id="share-link-input" readonly class="flex-grow p-3 bg-custom-darkest-gray border border-custom-medium-gray rounded-xl text-white outline-none">
+                    <button id="copy-share-link" class="px-4 py-3 bg-optana-orange text-white rounded-xl hover:bg-orange-600 transition">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                <p class="text-xs text-custom-lighter-gray mt-2">Anyone with this link can request to join.</p>
+            </div>
+
+            <div id="requests-section" class="mb-8 hidden">
+                <h3 class="text-sm font-medium text-white mb-4">Pending Requests</h3>
+                <div id="requests-list" class="space-y-2">
+                    <!-- Requests will be injected here -->
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-sm font-medium text-white mb-4">Members</h3>
+                <div id="members-list" class="space-y-3">
+                    <!-- Members will be injected here -->
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <button type="button" id="close-share-modal" class="w-full p-3 bg-custom-medium-gray text-white rounded-xl hover:bg-custom-light-gray transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="../sidebar.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, arrayUnion, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { firebaseConfig } from "../firebase-config.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const wishlistId = urlParams.get('id');
+
+        if (!wishlistId) {
+            window.location.href = 'wishlists.html';
+        }
+
+        let currentWishlist = null;
+        let userRole = 'viewer';
+
+        // UI elements
+        const titleEl = document.getElementById('wishlist-title');
+        const descEl = document.getElementById('wishlist-desc');
+        const actionBtns = document.getElementById('action-buttons');
+        const itemsGrid = document.getElementById('items-grid');
+        
+        const addItemModal = document.getElementById('add-item-modal');
+        const openAddItemBtn = document.getElementById('open-add-item-modal');
+        const closeAddItemBtn = document.getElementById('close-item-modal');
+        const addItemForm = document.getElementById('add-item-form');
+
+        const shareModal = document.getElementById('share-modal');
+        const openShareBtn = document.getElementById('open-share-modal');
+        const closeShareBtn = document.getElementById('close-share-modal');
+        const shareLinkInput = document.getElementById('share-link-input');
+        const copyShareLinkBtn = document.getElementById('copy-share-link');
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                initWishlist(user.uid);
+            }
+        });
+
+        async function initWishlist(uid) {
+            const docRef = doc(db, "wishlists", wishlistId);
+            const snap = await getDoc(docRef);
+
+            if (!snap.exists()) {
+                alert("Wishlist not found.");
+                window.location.href = 'wishlists.html';
+                return;
+            }
+
+            currentWishlist = snap.data();
+            
+            // Check if user is a member
+            if (!currentWishlist.members.includes(uid)) {
+                // If not owner, might be a viewer/manager. Check roles.
+                // For now, if not in members, redirect or handle join request
+                // In a real app, you'd have a join page.
+                window.location.href = `join-wishlist.html?id=${wishlistId}`;
+                return;
+            }
+
+            userRole = currentWishlist.roles[uid] || 'viewer';
+            
+            titleEl.textContent = currentWishlist.name;
+            descEl.textContent = currentWishlist.description || 'No description.';
+            
+            if (userRole === 'owner' || userRole === 'manager') {
+                actionBtns.style.display = 'flex';
+            } else {
+                actionBtns.style.display = 'flex'; // Still show share for now
+                openAddItemBtn.style.display = 'none';
+            }
+
+            shareLinkInput.value = `${window.location.origin}/join-wishlist.html?id=${wishlistId}`;
+
+            // Listen for items
+            const itemsQuery = query(collection(db, "wishlists", wishlistId, "items"));
+            onSnapshot(itemsQuery, (itemsSnap) => {
+                renderItems(itemsSnap);
+            });
+
+            // Listen for members/requests if owner
+            if (userRole === 'owner') {
+                listenForRequests();
+                listenForMembers();
+            }
+        }
+
+        function renderItems(snap) {
+            itemsGrid.innerHTML = '';
+            if (snap.empty) {
+                itemsGrid.innerHTML = '<p class="col-span-full text-custom-light-gray italic">No items in this wishlist yet.</p>';
+                return;
+            }
+
+            snap.forEach(itemDoc => {
+                const data = itemDoc.data();
+                const card = document.createElement('div');
+                card.className = `p-6 bg-custom-dark-gray border border-custom-medium-gray rounded-3xl transition flex flex-col justify-between ${data.claimed ? 'claimed' : ''}`;
+                
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-start justify-between mb-4">
+                            <h3 class="text-xl font-medium text-white">${data.title}</h3>
+                            ${data.url ? `<a href="${data.url}" target="_blank" class="text-optana-orange hover:text-orange-400 transition"><i class="fas fa-external-link-alt"></i></a>` : ''}
+                        </div>
+                        <p class="text-sm text-custom-light-gray mb-4">${data.description || 'No notes.'}</p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-custom-medium-gray flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" ${data.claimed ? 'checked' : ''} class="w-5 h-5 rounded border-custom-medium-gray bg-custom-darkest-gray text-optana-orange focus:ring-optana-orange" onchange="toggleClaim('${itemDoc.id}', this.checked)">
+                            <span class="text-xs ${data.claimed ? 'text-green-500' : 'text-custom-light-gray'}">${data.claimed ? 'Claimed' : 'Available'}</span>
+                        </div>
+                        ${(userRole === 'owner' || userRole === 'manager') ? `
+                            <button onclick="deleteItem('${itemDoc.id}')" class="text-custom-light-gray hover:text-red-500 transition text-sm">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+                itemsGrid.appendChild(card);
+            });
+        }
+
+        // Global functions for inline events
+        window.toggleClaim = async (itemId, isChecked) => {
+            const itemRef = doc(db, "wishlists", wishlistId, "items", itemId);
+            await updateDoc(itemRef, {
+                claimed: isChecked,
+                claimedBy: isChecked ? auth.currentUser.uid : null,
+                claimedAt: isChecked ? serverTimestamp() : null
+            });
+        };
+
+        window.deleteItem = async (itemId) => {
+            if (confirm("Are you sure you want to remove this item?")) {
+                const itemRef = doc(db, "wishlists", wishlistId, "items", itemId);
+                await deleteDoc(itemRef);
+            }
+        };
+
+        // Modal handlers
+        openAddItemBtn.onclick = () => addItemModal.classList.remove('hidden');
+        closeAddItemBtn.onclick = () => addItemModal.classList.add('hidden');
+        document.getElementById('close-item-modal-bg').onclick = () => addItemModal.classList.add('hidden');
+
+        addItemForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('item-title').value;
+            const url = document.getElementById('item-url').value;
+            const desc = document.getElementById('item-desc').value;
+
+            try {
+                await addDoc(collection(db, "wishlists", wishlistId, "items"), {
+                    title,
+                    url,
+                    description: desc,
+                    claimed: false,
+                    addedBy: auth.currentUser.uid,
+                    createdAt: serverTimestamp()
+                });
+                // Update item count
+                const wishlistRef = doc(db, "wishlists", wishlistId);
+                await updateDoc(wishlistRef, {
+                    itemCount: (currentWishlist.itemCount || 0) + 1
+                });
+                addItemModal.classList.add('hidden');
+                addItemForm.reset();
+            } catch (err) {
+                console.error(err);
+                alert("Error adding item.");
+            }
+        };
+
+        openShareBtn.onclick = () => shareModal.classList.remove('hidden');
+        closeShareBtn.onclick = () => shareModal.classList.add('hidden');
+        document.getElementById('close-share-modal-bg').onclick = () => shareModal.classList.add('hidden');
+
+        copyShareLinkBtn.onclick = () => {
+            shareLinkInput.select();
+            document.execCommand('copy');
+            alert("Invite link copied to clipboard!");
+        };
+
+        // Sharing logic (simplified for owner)
+        function listenForRequests() {
+            const q = query(collection(db, "wishlists", wishlistId, "requests"), where("status", "==", "pending"));
+            onSnapshot(q, (snap) => {
+                const section = document.getElementById('requests-section');
+                const list = document.getElementById('requests-list');
+                list.innerHTML = '';
+                if (snap.empty) {
+                    section.classList.add('hidden');
+                    return;
+                }
+                section.classList.remove('hidden');
+                snap.forEach(requestDoc => {
+                    const data = requestDoc.data();
+                    const el = document.createElement('div');
+                    el.className = 'flex items-center justify-between p-3 bg-custom-darkest-gray rounded-xl border border-custom-medium-gray';
+                    el.innerHTML = `
+                        <div class="overflow-hidden">
+                            <p class="text-sm text-white truncate">${data.email}</p>
+                            <p class="text-xs text-custom-light-gray">${data.displayName || 'User'}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="handleRequest('${requestDoc.id}', '${data.uid}', true)" class="w-8 h-8 rounded-lg bg-green-500/10 text-green-500 hover:bg-green-500/20 transition"><i class="fas fa-check"></i></button>
+                            <button onclick="handleRequest('${requestDoc.id}', '${data.uid}', false)" class="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition"><i class="fas fa-times"></i></button>
+                        </div>
+                    `;
+                    list.appendChild(el);
+                });
+            });
+        }
+
+        window.handleRequest = async (requestId, requesterUid, approved) => {
+            const requestRef = doc(db, "wishlists", wishlistId, "requests", requestId);
+            if (approved) {
+                const wishlistRef = doc(db, "wishlists", wishlistId);
+                await updateDoc(wishlistRef, {
+                    members: arrayUnion(requesterUid),
+                    [`roles.${requesterUid}`]: 'viewer'
+                });
+                await updateDoc(requestRef, { status: 'approved' });
+            } else {
+                await updateDoc(requestRef, { status: 'denied' });
+            }
+        };
+
+        function listenForMembers() {
+            // In a real app, you'd fetch user details from 'users' collection
+            const list = document.getElementById('members-list');
+            list.innerHTML = '';
+            
+            // For now, just show the IDs/roles from currentWishlist
+            Object.entries(currentWishlist.roles).forEach(([uid, role]) => {
+                const el = document.createElement('div');
+                el.className = 'flex items-center justify-between p-3 bg-custom-darkest-gray rounded-xl border border-custom-medium-gray';
+                el.innerHTML = `
+                    <span class="text-sm text-white truncate">${uid === auth.currentUser.uid ? 'You' : uid.substring(0, 8)}</span>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs px-2 py-1 bg-custom-medium-gray rounded-lg text-custom-light-gray">${role}</span>
+                        ${(uid !== auth.currentUser.uid && userRole === 'owner') ? `
+                            <button onclick="changeRole('${uid}', '${role === 'viewer' ? 'manager' : 'viewer'}')" class="text-xs text-optana-orange hover:underline">${role === 'viewer' ? 'Make Manager' : 'Make Viewer'}</button>
+                        ` : ''}
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        window.changeRole = async (targetUid, newRole) => {
+            const wishlistRef = doc(db, "wishlists", wishlistId);
+            await updateDoc(wishlistRef, {
+                [`roles.${targetUid}`]: newRole
+            });
+            // Update local view
+            currentWishlist.roles[targetUid] = newRole;
+            listenForMembers();
+        };
+
+    </script>
+</body>
+</html>

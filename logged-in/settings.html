@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Optana V2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-darkest-gray': '#040404',
+                        'custom-dark-gray': '#111111',
+                        'custom-medium-gray': '#252525',
+                        'custom-light-gray': '#505050',
+                        'custom-lighter-gray': '#808080',
+                        'custom-white-gray': '#c0c0c0',
+                        'optana-orange': '#FF8C42',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Geist', sans-serif; background-color: #040404; color: #c0c0c0; }
+        .main-content { margin-left: 16rem; min-height: 100vh; }
+        @media (max-width: 768px) { .main-content { margin-left: 0; } }
+    </style>
+</head>
+<body class="bg-custom-darkest-gray text-custom-white-gray">
+
+    <main class="main-content p-8">
+        <header class="mb-12">
+            <h1 class="text-4xl font-light tracking-tighter mb-2">Settings</h1>
+            <p class="text-custom-light-gray">Manage your account and preferences.</p>
+        </header>
+
+        <div class="max-w-2xl space-y-6">
+            <div class="p-8 bg-custom-dark-gray border border-custom-medium-gray rounded-3xl">
+                <h3 class="text-xl font-medium text-white mb-6">Profile Information</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-custom-light-gray mb-2">Display Name</label>
+                        <input type="text" id="settings-display-name" class="w-full p-3 bg-custom-darkest-gray border border-custom-medium-gray rounded-xl text-white outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-custom-light-gray mb-2">Email Address</label>
+                        <input type="email" id="settings-email" disabled class="w-full p-3 bg-custom-darkest-gray border border-custom-medium-gray rounded-xl text-custom-light-gray outline-none cursor-not-allowed">
+                    </div>
+                    <button id="save-settings" class="px-6 py-3 bg-optana-orange text-white rounded-xl hover:bg-orange-600 transition">Save Changes</button>
+                </div>
+            </div>
+
+            <div class="p-8 bg-custom-dark-gray border border-custom-medium-gray rounded-3xl">
+                <h3 class="text-xl font-medium text-red-500 mb-6">Danger Zone</h3>
+                <p class="text-sm text-custom-light-gray mb-6">Once you delete your account, there is no going back. Please be certain.</p>
+                <button class="px-6 py-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition">Delete Account</button>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="../sidebar.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { firebaseConfig } from "../firebase-config.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('settings-display-name').value = user.displayName || "";
+                document.getElementById('settings-email').value = user.email || "";
+            }
+        });
+
+        document.getElementById('save-settings').onclick = async () => {
+            const user = auth.currentUser;
+            const newName = document.getElementById('settings-display-name').value;
+            if (user) {
+                try {
+                    await updateProfile(user, { displayName: newName });
+                    await updateDoc(doc(db, "users", user.uid), { displayName: newName });
+                    alert("Settings updated!");
+                } catch (err) {
+                    console.error(err);
+                    alert("Error updating profile.");
+                }
+            }
+        };
+    </script>
+</body>
+</html>

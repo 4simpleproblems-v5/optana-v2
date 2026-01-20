@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optana V2 - WISHLISTS</title>
+    <meta name="description" content="Optana V2 - The ultimate wishlist management platform. Reimagined with 4SP's cutting-edge style.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="navigation-mini.js" defer></script>
+
+    <style>
+        :root {
+            --geist-foreground: 255, 255, 255;
+            --geist-background: 0, 0, 0;
+        }
+        .dark { color-scheme: dark; }
+        body { font-family: 'Geist', sans-serif; }
+        
+        .gradient-text {
+            background-image: linear-gradient(90deg, #FF8C42, #f59e0b, #FF8C42);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            background-size: 300% auto;
+            animation: shine 8s linear infinite;
+        }
+
+        @keyframes shine {
+            to { background-position: 300% center; }
+        }
+
+        #dynamic-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, #2e1a0b 0%, #000000 100%);
+            opacity: 0.8;
+            z-index: -10;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen relative">
+    
+    <div id="dynamic-background"></div>
+
+    <main>
+        <section class="text-center relative overflow-hidden flex flex-col items-center justify-center min-h-screen px-4">
+            
+            <div class="mx-auto max-w-5xl">
+                <h1 class="text-3xl sm:text-4xl font-light text-gray-300 tracking-tighter mb-4 leading-tight">
+                    Optana V2
+                 </h1>
+                <h2 class="text-5xl sm:text-7xl font-light tracking-tighter mb-6 leading-tight">
+                    <span class="gradient-text font-bold">Wishlists, Perfected.</span>
+                </h2>
+                <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-8 font-light leading-relaxed">
+                    The original wishlist platform, reimagined with professional productivity tools and advanced sharing capabilities.
+                </p>
+                <div id="auth-button-container" class="space-y-4">
+                    <a id="auth-button" href="connection.html" class="inline-flex items-center justify-center px-8 py-4 border border-white/10 text-lg font-normal rounded-2xl shadow-sm text-white bg-white/5 hover:bg-white/10 hover:scale-105 transition duration-300">
+                        Get Started Instantly <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="border-t border-gray-900 py-6">
+        <div class="mx-auto max-w-7xl px-4 text-center text-gray-500 text-sm">
+            &copy; 2026 Optana V2. A 4SP Inspired Project.
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+        import { firebaseConfig } from './firebase-config.js';
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const authButton = document.getElementById('auth-button');
+
+        onAuthStateChanged(auth, (user) => {
+            if (user && authButton) {
+                authButton.href = 'logged-in/dashboard.html';
+                authButton.innerHTML = 'Go to Dashboard <i class="fas fa-arrow-right ml-2"></i>';
+            }
+        });
+    </script>
+</body>
+</html>

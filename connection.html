@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optana V2 - CONNECT</title>
+    <meta name="description" content="Log into or create your Optana account to manage your wishlists.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="navigation-mini.js" defer></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-darkest-gray': '#040404',
+                        'custom-dark-gray': '#111111',
+                        'custom-medium-gray': '#252525',
+                        'custom-light-gray': '#505050',
+                        'custom-lighter-gray': '#808080',
+                        'custom-white-gray': '#c0c0c0',
+                        'optana-orange': '#FF8C42',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        :root {
+            --geist-foreground: 192, 192, 192; 
+            --geist-background: 7, 7, 7;
+        }
+
+        body {
+            font-family: 'Geist', sans-serif;
+            background-color: rgb(var(--geist-background));
+            color: rgb(var(--geist-foreground));
+            transition: all 0.3s ease;
+            font-weight: 300;
+        }
+
+        h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-tighter {
+            font-weight: 400 !important;
+        }
+
+        .btn-social {
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        .btn-social:hover {
+            background-color: rgba(37, 37, 37, 0.7);
+            border-color: #383838;
+        }
+        
+        .message-area { min-height: 20px; }
+        .error-message { color: #f87171; font-weight: 400; }
+        .success-message { color: #4ade80; font-weight: 400; }
+        .warning-message { color: #fbbf24; font-weight: 400; }
+        
+        .auth-split-container { max-width: 1200px; margin: 0 auto; min-height: 100vh; }
+        @media (max-width: 767px) {
+            .right-col { display: none; }
+            .left-col { border-right: none; }
+        }
+
+        /* Toast Notifications */
+        #notification-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .notification-toast {
+            background-color: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+            min-width: 200px;
+            transform: translateX(120%);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: auto;
+        }
+        .notification-toast.show { transform: translateX(0); opacity: 1; }
+        .notification-toast i { font-size: 1.1em; }
+        .notification-toast.success i { color: #22c55e; }
+        .notification-toast.error i { color: #ef4444; }
+    </style>
+</head>
+<body class="bg-custom-darkest-gray text-custom-white-gray min-h-screen flex flex-col">
+
+    <div id="notification-container"></div>
+
+    <main class="flex-grow flex items-stretch justify-center p-0">
+        <div class="auth-split-container bg-custom-darkest-gray flex flex-wrap w-full border-0 overflow-hidden p-0">
+            
+            <div class="auth-col left-col flex-1 p-8 flex flex-col justify-center items-center bg-custom-darkest-gray min-w-[300px] border-r border-custom-medium-gray/30">
+
+                <div id="login-container" class="w-full flex flex-col items-center">
+                    <h2 class="text-3xl font-normal text-custom-white-gray mb-6 text-center w-full tracking-tighter">Login to Optana</h2>
+                    <form id="loginForm" class="w-full max-w-md"> 
+                        <div class="mb-5">
+                            <label for="loginEmail" class="block mb-2 text-custom-light-gray text-sm font-light text-left">Email</label>
+                            <input type="email" id="loginEmail" placeholder="Enter your email" required class="w-full p-3 border border-custom-medium-gray bg-custom-dark-gray rounded-xl text-custom-white-gray transition focus:border-custom-light-gray focus:ring focus:ring-custom-light-gray/50 focus:outline-none">
+                        </div>
+                        <div class="mb-5">
+                            <label for="loginPassword" class="block mb-2 text-custom-light-gray text-sm font-light text-left">Password</label>
+                            <input type="password" id="loginPassword" placeholder="Enter your password" required class="w-full p-3 border border-custom-medium-gray bg-custom-dark-gray rounded-xl text-custom-white-gray transition focus:border-custom-light-gray focus:ring focus:ring-custom-light-gray/50 focus:outline-none">
+                        </div>
+                        <button type="submit" class="w-full p-3 text-lg rounded-xl font-normal ring-1 ring-white/20 text-white bg-white/5 hover:bg-white/10 transition">LOGIN</button>
+                    </form>
+                    
+                    <div id="loginMessage" class="message-area w-full mt-4 text-center text-sm"></div>
+                    
+                    <div class="w-full max-w-md mt-4 text-center"> 
+                        <a id="forgotPasswordLink" class="text-white hover:text-gray-300 font-normal text-sm cursor-pointer">Forgot Password?</a> 
+                    </div>
+
+                    <p class="text-sm text-custom-light-gray mt-6 text-center w-full max-w-md">
+                        Don't have an account? 
+                        <a id="goToSignupLink" class="text-white hover:text-gray-300 font-normal cursor-pointer transition">Sign up here</a>
+                    </p>
+                </div>
+
+                <div id="resetPasswordContainer" class="w-full flex-col items-center hidden">
+                    <h2 class="text-3xl font-normal text-custom-white-gray mb-6 text-center w-full tracking-tighter">Reset Your Password</h2>
+                    <p class="text-custom-light-gray text-base mb-6 text-center max-w-md font-normal">Enter your email address and we'll send you a link to reset your password.</p>
+                    <form id="resetPasswordForm" novalidate class="w-full max-w-md">
+                        <div class="mb-5">
+                            <label for="resetEmail" class="block mb-2 text-custom-light-gray text-sm font-light text-left">Email</label>
+                            <input type="email" id="resetEmail" placeholder="Enter your registered email" required class="w-full p-3 border border-custom-medium-gray bg-custom-dark-gray rounded-xl text-custom-white-gray transition focus:border-custom-light-gray focus:ring focus:ring-custom-light-gray/50 focus:outline-none">
+                        </div>
+                        <button type="submit" class="w-full p-3 text-lg rounded-xl font-normal ring-1 ring-white/20 text-white bg-white/5 hover:bg-white/10 transition">SEND RESET LINK</button>
+                    </form>
+                    <div id="resetMessage" class="message-area w-full max-w-md mt-4 text-center text-sm"></div>
+                    <div class="w-full max-w-md mt-6 text-center"> 
+                        <a id="backToLoginFromReset" class="text-white hover:text-gray-300 font-normal text-sm cursor-pointer">&larr; Back to Login</a> 
+                    </div>
+                </div>
+
+                <div id="signupContainer" class="w-full flex-col items-center hidden">
+                    <h2 class="text-3xl font-normal text-custom-white-gray mb-6 text-center w-full tracking-tighter">Create Optana Account</h2>
+                    <form id="signupForm" class="w-full max-w-md"> 
+                        <div class="mb-5">
+                            <label for="signupEmail" class="block mb-2 text-custom-light-gray text-sm font-light text-left">Email</label>
+                            <input type="email" id="signupEmail" placeholder="Enter your email" required class="w-full p-3 border border-custom-medium-gray bg-custom-dark-gray rounded-xl text-custom-white-gray transition focus:border-custom-light-gray focus:ring focus:ring-custom-light-gray/50 focus:outline-none">
+                        </div>
+                        <div class="mb-5">
+                            <label for="signupPassword" class="block mb-2 text-custom-light-gray text-sm font-light text-left">Password</label>
+                            <input type="password" id="signupPassword" placeholder="Create a password" required class="w-full p-3 border border-custom-medium-gray bg-custom-dark-gray rounded-xl text-custom-white-gray transition focus:border-custom-light-gray focus:ring focus:ring-custom-light-gray/50 focus:outline-none">
+                            <p class="text-xs text-custom-lighter-gray mt-2 text-left font-light">At least 8 characters (1 number, 1 uppercase, 1 lowercase).</p>
+                        </div>
+                        <button type="submit" class="w-full p-3 text-lg rounded-xl font-normal ring-1 ring-white/20 text-white bg-white/5 hover:bg-white/10 transition">CREATE ACCOUNT</button>
+                    </form>
+                    <div id="signupMessage" class="message-area w-full mt-4 text-center text-sm"></div>
+                    <div class="w-full max-w-md mt-6 text-center"> 
+                        <a id="backToLoginFromSignup" class="text-white hover:text-gray-300 font-normal text-sm cursor-pointer">&larr; Back to Login</a> 
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="auth-col right-col flex-1 p-8 flex flex-col items-center justify-center bg-custom-darkest-gray">
+                
+                <div id="unauth-social-container" class="w-full flex flex-col items-center justify-center">
+                    <h2 class="text-3xl font-normal text-custom-white-gray mb-6 text-center w-full tracking-tighter">Continue instantly</h2>
+                    <p class="text-lg text-custom-light-gray mb-8 text-center max-w-md font-normal">
+                        Use Google to sign in or create an account in one click.
+                    </p>
+                    
+                    <button id="googleAuthBtn" class="btn-social flex items-center justify-center w-full max-w-md p-3 bg-custom-dark-gray text-custom-white-gray border border-custom-medium-gray rounded-xl font-normal cursor-pointer mb-3">
+                        <img src="https://cdn.jsdelivr.net/npm/4sp-dv@latest/images/google-icon.png" alt="Google Logo" class="w-6 h-6 mr-3">
+                        Continue with Google
+                    </button>
+
+                    <p class="text-xs italic text-custom-light-gray text-center max-w-md mt-4 leading-relaxed font-light">
+                        By continuing, you agree to our 
+                        <a href="legal.html#terms-of-service" target="_blank" class="text-white hover:text-gray-300 font-normal">Terms of Service</a> and 
+                        <a href="legal.html#privacy-policy" target="_blank" class="text-white hover:text-gray-300 font-normal">Privacy Policy</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="border-t border-gray-900 py-6">
+        <div class="mx-auto max-w-7xl px-4 text-center text-gray-500 text-sm">
+            &copy; 2026 Optana V2. Built for efficiency.
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import {
+            getAuth,
+            onAuthStateChanged,
+            signOut,
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            sendPasswordResetEmail,
+            sendEmailVerification,
+            fetchSignInMethodsForEmail,
+            GoogleAuthProvider,
+            signInWithPopup
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc,
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        
+        import { firebaseConfig } from "./firebase-config.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // UI References
+        const loginContainer = document.getElementById('login-container');
+        const resetPasswordContainer = document.getElementById('resetPasswordContainer');
+        const signupContainer = document.getElementById('signupContainer');
+        
+        const loginMessage = document.getElementById('loginMessage');
+        const resetMessage = document.getElementById('resetMessage');
+        const signupMessage = document.getElementById('signupMessage');
+
+        // --- Notification Logic ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            const toast = document.createElement('div');
+            toast.className = `notification-toast ${type}`;
+            let icon = 'fa-circle-info';
+            if (type === 'success') icon = 'fa-check-circle';
+            if (type === 'error') icon = 'fa-circle-exclamation';
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        async function ensureUserDocument(user) {
+            const userDocRef = doc(db, "users", user.uid);
+            try {
+                const userSnap = await getDoc(userDocRef);
+                const userData = {
+                    email: user.email,
+                    authMethod: user.providerData[0]?.providerId || 'password',
+                    displayName: user.displayName || user.email.split('@')[0],
+                    photoURL: user.photoURL || null,
+                    lastSeen: serverTimestamp()
+                };
+                if (!userSnap.exists()) {
+                    userData.createdAt = serverTimestamp();
+                }
+                await setDoc(userDocRef, userData, { merge: true });
+                return true;
+            } catch (err) {
+                console.error("User Sync Error:", err);
+                return false;
+            }
+        }
+
+        function switchView(viewName) {
+            [loginContainer, resetPasswordContainer, signupContainer].forEach(el => el.classList.add('hidden'));
+            const target = { 'login': loginContainer, 'reset': resetPasswordContainer, 'signup': signupContainer }[viewName];
+            if (target) target.classList.remove('hidden');
+        }
+
+        document.getElementById('forgotPasswordLink').addEventListener('click', () => switchView('reset'));
+        document.getElementById('backToLoginFromReset').addEventListener('click', () => switchView('login'));
+        document.getElementById('goToSignupLink').addEventListener('click', () => switchView('signup'));
+        document.getElementById('backToLoginFromSignup').addEventListener('click', () => switchView('login'));
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                if (!user.emailVerified && user.providerData[0]?.providerId === 'password') {
+                    await signOut(auth);
+                    switchView('login');
+                    loginMessage.innerHTML = 'Email not verified. <a href="#" id="resend-link" class="underline">Resend?</a>';
+                    loginMessage.className = "message-area w-full mt-4 text-center text-sm error-message";
+                    document.getElementById('resend-link')?.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        await sendEmailVerification(user);
+                        loginMessage.innerText = 'Verification sent!';
+                    });
+                    return; 
+                }
+                await ensureUserDocument(user);
+                window.location.href = 'logged-in/dashboard.html';
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                loginMessage.innerText = 'Invalid email or password.';
+                loginMessage.className = "message-area w-full mt-4 text-center text-sm error-message";
+            }
+        });
+
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            if (password.length < 8) {
+                signupMessage.innerText = 'Password must be 8+ characters.';
+                signupMessage.className = "message-area w-full mt-4 text-center text-sm error-message";
+                return;
+            }
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await sendEmailVerification(userCredential.user);
+                await signOut(auth); 
+                switchView('login');
+                loginMessage.innerText = 'Account created! Verify your email to login.';
+                loginMessage.className = "message-area w-full mt-4 text-center text-sm success-message";
+            } catch (error) {
+                signupMessage.innerText = error.message;
+                signupMessage.className = "message-area w-full mt-4 text-center text-sm error-message";
+            }
+        });
+
+        document.getElementById('googleAuthBtn').addEventListener('click', async () => {
+            try {
+                await signInWithPopup(auth, new GoogleAuthProvider());
+            } catch (error) {
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>

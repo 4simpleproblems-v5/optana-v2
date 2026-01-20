@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Wishlist - Optana V2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="navigation-mini.js" defer></script>
+    
+        <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-darkest-gray': '#040404',
+                        'custom-dark-gray': '#111111',
+                        'custom-medium-gray': '#252525',
+                        'custom-light-gray': '#505050',
+                        'custom-lighter-gray': '#808080',
+                        'custom-white-gray': '#c0c0c0',
+                        'optana-orange': '#FF8C42',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Geist', sans-serif; background-color: #040404; color: #c0c0c0; }
+        .dark { color-scheme: dark; }
+    </style>
+</head>
+<body class="bg-custom-darkest-gray text-custom-white-gray min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-md bg-custom-dark-gray border border-custom-medium-gray rounded-3xl p-8 shadow-2xl text-center">
+        <div id="loading-state">
+            <i class="fas fa-circle-notch fa-spin text-3xl text-optana-orange mb-4"></i>
+            <p>Loading wishlist details...</p>
+        </div>
+
+        <div id="join-state" class="hidden">
+            <i class="fas fa-gift text-5xl text-optana-orange mb-6"></i>
+            <h1 id="wishlist-name" class="text-3xl font-light tracking-tighter mb-2 text-white">...</h1>
+            <p id="wishlist-desc" class="text-custom-light-gray mb-8">...</p>
+            
+            <button id="join-btn" class="w-full p-4 bg-optana-orange text-white rounded-2xl hover:bg-orange-600 transition font-medium">
+                Request to Join
+            </button>
+            <p id="status-msg" class="mt-4 text-sm hidden"></p>
+        </div>
+
+        <div id="error-state" class="hidden">
+            <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-6"></i>
+            <h1 class="text-2xl font-light tracking-tighter mb-2 text-white">Wishlist Not Found</h1>
+            <p class="text-custom-light-gray mb-8">The link you followed may be invalid or the wishlist has been deleted.</p>
+            <a href="index.html" class="inline-block p-4 bg-custom-medium-gray text-white rounded-2xl hover:bg-custom-light-gray transition">Go Home</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { firebaseConfig } from "./firebase-config.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const wishlistId = urlParams.get('id');
+
+        const loadingState = document.getElementById('loading-state');
+        const joinState = document.getElementById('join-state');
+        const errorState = document.getElementById('error-state');
+        
+        const nameEl = document.getElementById('wishlist-name');
+        const descEl = document.getElementById('wishlist-desc');
+        const joinBtn = document.getElementById('join-btn');
+        const statusMsg = document.getElementById('status-msg');
+
+        if (!wishlistId) {
+            loadingState.classList.add('hidden');
+            errorState.classList.remove('hidden');
+        } else {
+            onAuthStateChanged(auth, (user) => {
+                if (!user) {
+                    window.location.href = `connection.html?redirect=join-wishlist.html?id=${wishlistId}`;
+                    return;
+                }
+                loadWishlist(user);
+            });
+        }
+
+        async function loadWishlist(user) {
+            try {
+                const docRef = doc(db, "wishlists", wishlistId);
+                const snap = await getDoc(docRef);
+
+                if (!snap.exists()) {
+                    loadingState.classList.add('hidden');
+                    errorState.classList.remove('hidden');
+                    return;
+                }
+
+                const data = snap.data();
+                
+                // If already a member, redirect to wishlist view
+                if (data.members.includes(user.uid)) {
+                    window.location.href = `logged-in/view-wishlist.html?id=${wishlistId}`;
+                    return;
+                }
+
+                nameEl.textContent = data.name;
+                descEl.textContent = data.description || "You've been invited to view this wishlist.";
+                
+                // Check if already requested
+                const q = query(collection(db, "wishlists", wishlistId, "requests"), where("uid", "==", user.uid), where("status", "==", "pending"));
+                const requestSnap = await getDocs(q);
+                
+                if (!requestSnap.empty) {
+                    joinBtn.disabled = true;
+                    joinBtn.textContent = "Request Pending";
+                    joinBtn.classList.replace('bg-optana-orange', 'bg-custom-medium-gray');
+                }
+
+                loadingState.classList.add('hidden');
+                joinState.classList.remove('hidden');
+
+                joinBtn.onclick = async () => {
+                    joinBtn.disabled = true;
+                    joinBtn.textContent = "Sending...";
+                    
+                    try {
+                        await addDoc(collection(db, "wishlists", wishlistId, "requests"), {
+                            uid: user.uid,
+                            email: user.email,
+                            displayName: user.displayName || user.email.split('@')[0],
+                            status: "pending",
+                            createdAt: serverTimestamp()
+                        });
+                        
+                        joinBtn.textContent = "Request Sent";
+                        joinBtn.classList.replace('bg-optana-orange', 'bg-green-500/20');
+                        joinBtn.classList.add('text-green-500', 'border', 'border-green-500/30');
+                        
+                        statusMsg.textContent = "Your request has been sent to the owner.";
+                        statusMsg.className = "mt-4 text-sm text-green-500 block";
+                    } catch (err) {
+                        console.error(err);
+                        joinBtn.disabled = false;
+                        joinBtn.textContent = "Request to Join";
+                        statusMsg.textContent = "Error sending request. Please try again.";
+                        statusMsg.className = "mt-4 text-sm text-red-500 block";
+                    }
+                };
+
+            } catch (err) {
+                console.error(err);
+                loadingState.classList.add('hidden');
+                errorState.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

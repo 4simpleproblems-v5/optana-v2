@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favorites - Optana V2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-darkest-gray': '#040404',
+                        'custom-dark-gray': '#111111',
+                        'custom-medium-gray': '#252525',
+                        'custom-light-gray': '#505050',
+                        'custom-lighter-gray': '#808080',
+                        'custom-white-gray': '#c0c0c0',
+                        'optana-orange': '#FF8C42',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Geist', sans-serif; background-color: #040404; color: #c0c0c0; }
+        .main-content { margin-left: 16rem; min-height: 100vh; }
+        @media (max-width: 768px) { .main-content { margin-left: 0; } }
+    </style>
+</head>
+<body class="bg-custom-darkest-gray text-custom-white-gray">
+
+    <main class="main-content p-8">
+        <header class="mb-12">
+            <h1 class="text-4xl font-light tracking-tighter mb-2">Favorites</h1>
+            <p class="text-custom-light-gray">Items you've saved for later.</p>
+        </header>
+
+        <div class="flex flex-col items-center justify-center py-20 text-center bg-custom-dark-gray border border-custom-medium-gray rounded-3xl">
+            <i class="fas fa-heart text-6xl text-custom-medium-gray mb-6"></i>
+            <h3 class="text-xl text-white mb-2">No favorites yet</h3>
+            <p class="text-custom-light-gray max-w-md mx-auto">Start marking items as favorites to see them here.</p>
+            <a href="wishlists.html" class="mt-8 text-optana-orange hover:underline">Browse Wishlists</a>
+        </div>
+    </main>
+
+    <script type="module" src="../sidebar.js"></script>
+</body>
+</html>

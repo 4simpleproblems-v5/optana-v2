@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Optana V2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-darkest-gray': '#040404',
+                        'custom-dark-gray': '#111111',
+                        'custom-medium-gray': '#252525',
+                        'custom-light-gray': '#505050',
+                        'custom-lighter-gray': '#808080',
+                        'custom-white-gray': '#c0c0c0',
+                        'optana-orange': '#FF8C42',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Geist', sans-serif; background-color: #040404; color: #c0c0c0; }
+        .gradient-text {
+            background-image: linear-gradient(90deg, #FF8C42, #f59e0b, #FF8C42);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            background-size: 300% auto;
+            animation: shine 8s linear infinite;
+        }
+        @keyframes shine { to { background-position: 300% center; } }
+        .main-content { margin-left: 16rem; min-height: 100vh; transition: margin-left 0.3s; }
+        @media (max-width: 768px) { .main-content { margin-left: 0; } }
+    </style>
+</head>
+<body class="bg-custom-darkest-gray text-custom-white-gray">
+
+    <main class="main-content p-8">
+        <header class="mb-12">
+            <h1 class="text-4xl font-light tracking-tighter mb-2">Welcome back, <span id="user-display-name" class="font-bold text-white">...</span></h1>
+            <p class="text-custom-light-gray">Here's what's happening with your wishlists.</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div class="p-6 bg-custom-dark-gray border border-custom-medium-gray rounded-3xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-custom-light-gray text-sm uppercase tracking-widest">Active Wishlists</h3>
+                    <i class="fas fa-gift text-optana-orange"></i>
+                </div>
+                <p id="stat-wishlists" class="text-4xl font-bold text-white">0</p>
+            </div>
+            <div class="p-6 bg-custom-dark-gray border border-custom-medium-gray rounded-3xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-custom-light-gray text-sm uppercase tracking-widest">Shared Groups</h3>
+                    <i class="fas fa-users text-optana-orange"></i>
+                </div>
+                <p id="stat-groups" class="text-4xl font-bold text-white">0</p>
+            </div>
+            <div class="p-6 bg-custom-dark-gray border border-custom-medium-gray rounded-3xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-custom-light-gray text-sm uppercase tracking-widest">Items Tracked</h3>
+                    <i class="fas fa-list text-optana-orange"></i>
+                </div>
+                <p id="stat-items" class="text-4xl font-bold text-white">0</p>
+            </div>
+        </div>
+
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div>
+                <h2 class="text-2xl font-light tracking-tighter mb-6">Recent Wishlists</h2>
+                <div id="wishlist-list" class="space-y-4">
+                    <!-- Wishlist cards will be injected here -->
+                    <div class="p-6 bg-custom-dark-gray border border-custom-medium-gray rounded-3xl animate-pulse">
+                        <div class="h-4 bg-custom-medium-gray rounded w-3/4 mb-2"></div>
+                        <div class="h-3 bg-custom-medium-gray rounded w-1/2"></div>
+                    </div>
+                </div>
+                <a href="wishlists.html" class="inline-block mt-6 text-optana-orange hover:text-orange-400 transition text-sm">View all wishlists &rarr;</a>
+            </div>
+
+            <div>
+                <h2 class="text-2xl font-light tracking-tighter mb-6">Quick Actions</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <button id="btn-create-wishlist" class="p-6 bg-custom-dark-gray border border-custom-medium-gray rounded-3xl hover:bg-custom-medium-gray transition text-left group">
+                        <i class="fas fa-plus-circle text-optana-orange mb-4 block text-xl group-hover:scale-110 transition"></i>
+                        <span class="block text-white font-medium">New Wishlist</span>
+                        <span class="text-xs text-custom-light-gray">Start from scratch</span>
+                    </button>
+                    <button id="btn-join-group" class="p-6 bg-custom-dark-gray border border-custom-medium-gray rounded-3xl hover:bg-custom-medium-gray transition text-left group">
+                        <i class="fas fa-user-plus text-optana-orange mb-4 block text-xl group-hover:scale-110 transition"></i>
+                        <span class="block text-white font-medium">Join Group</span>
+                        <span class="text-xs text-custom-light-gray">Use an invite link</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="../sidebar.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { firebaseConfig } from "../firebase-config.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                document.getElementById('user-display-name').textContent = user.displayName || user.email.split('@')[0];
+                fetchDashboardStats(user.uid);
+            }
+        });
+
+        async function fetchDashboardStats(uid) {
+            // Count wishlists
+            const wQuery = query(collection(db, "wishlists"), where("owner", "==", uid));
+            const wSnap = await getDocs(wQuery);
+            document.getElementById('stat-wishlists').textContent = wSnap.size;
+
+            // Count groups
+            const gQuery = query(collection(db, "groups"), where("members", "array-contains", uid));
+            const gSnap = await getDocs(gQuery);
+            document.getElementById('stat-groups').textContent = gSnap.size;
+
+            // Fetch recent wishlists
+            const recentQuery = query(collection(db, "wishlists"), where("owner", "==", uid), limit(3));
+            const recentSnap = await getDocs(recentQuery);
+            const container = document.getElementById('wishlist-list');
+            container.innerHTML = '';
+
+            if (recentSnap.empty) {
+                container.innerHTML = '<p class="text-custom-light-gray text-sm italic">No wishlists found. Create your first one!</p>';
+            } else {
+                recentSnap.forEach(doc => {
+                    const data = doc.data();
+                    const card = `
+                        <a href="view-wishlist.html?id=${doc.id}" class="block p-6 bg-custom-dark-gray border border-custom-medium-gray rounded-3xl hover:border-optana-orange transition group">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-white font-medium group-hover:text-optana-orange transition">${data.name || 'Untitled Wishlist'}</h3>
+                                    <p class="text-xs text-custom-light-gray">${data.itemCount || 0} items</p>
+                                </div>
+                                <i class="fas fa-chevron-right text-custom-medium-gray group-hover:text-optana-orange transition"></i>
+                            </div>
+                        </a>
+                    `;
+                    container.innerHTML += card;
+                });
+            }
+        }
+    </script>
+</body>
+</html>
